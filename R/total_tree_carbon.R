@@ -12,39 +12,23 @@
 #' @return A data frame with total estimated carbon content.
 #' @import dplyr
 #' @importFrom allodb get_biomass
-#' @export
+#' @export()
 
-total_tree_carbon <- function(csv_file,
-                              dbh_col = NULL,
-                              height_col = NULL,
+total_tree_carbon <- function(data,
+                              dbh_col,
                               genus_col,
                               species_col,
                               lat_col,
-                              lon_col, ...) {
-  data <- read.csv(csv_file)
-
-  carbon_content <- 0.5
-
+                              lon_col,
+                              carbon, ...) {
   # Ensure required columns exist in the dataset
-  required_cols <- c(species_col, lat_col, lon_col)
+  required_cols <- c(dbh_col, species_col, lat_col, lon_col)
   if (!all(required_cols %in% names(data))) {
-    stop("Dataset must contain species and location columns")
-  }
-
-  # Check if DBH or height column is provided and exists in the dataset
-  if (!is.null(dbh_col) && dbh_col %in% names(data)) {
-    measurement_col <- dbh_col
-    measurement_type <- "dbh"
-  } else if (!is.null(height_col) && height_col %in% names(data)) {
-    measurement_col <- height_col
-    measurement_type <- "height"
-  } else {
-    stop("Dataset must contain either a DBH or height column")
+    stop("Dataset must contain tree DBH, species and location columns")
   }
 
   # Extract columns for checking
   dbh_values <- data[[dbh_col]]
-  height_values <- data[[height_col]]
   genus_values <- data[[genus_col]]
   species_values <- data[[species_col]]
   lat_values <- data[[lat_col]]
@@ -59,14 +43,8 @@ total_tree_carbon <- function(csv_file,
   if (length(genus_values) != length(dbh_values) || length(species_values) != length(dbh_values)) {
     stop("Lengths of dbh_col, genus_col, and species_col must match.")
   }
-  if (length(genus_values) != length(height_values) || length(species_values) != length(height_values)) {
-    stop("Lengths of height_col, genus_col, and species_col must match.")
-  }
   if (length(lat_values) != length(dbh_values) || length(lon_values) != length(dbh_values)) {
     stop("Lengths of dbh_col, lon_col, and lat_col must match.")
-  }
-  if (length(lat_values) != length(height_values) || length(lon_values) != length(height_values)) {
-    stop("Lengths of height_col, lon_col, and lat_col must match.")
   }
 
   # Check if latitude and longitude are within valid ranges
@@ -83,22 +61,17 @@ total_tree_carbon <- function(csv_file,
   }
 
   # Apply get_biomass function to each row
-  total_carbon <- data %>%
-    rowwise() %>%
-    mutate(
-      biomass = allodb::get_biomass(
-        species = !!sym(species_col),
-        genus = !!sym(genus_col),
-        dbh = ifelse(measurement_type == "dbh", !!sym(measurement_col), NA),
-        height = ifelse(measurement_type == "height", !!sym(measurement_col), NA),
-        coords = c(!!sym(lon_col), !!sym(lat_col))
-      ),
-  # calculate carbon content of each tree
-      tree_carbon = biomass*carbon_content
-    ) %>%
-    ungroup()%>%
-  # calculate the sum of carbon content in the stand
-    summarise(total_carbon = sum(tree_carbon))
+ data$biomass <- get_biomass(
+   dbh = data[[dbh_col]],
+   genus = data[[genus_col]],
+   species = data[[species_col]],
+   coords = data[,c(lon_col, lat_col)])
+
+ data <- data %>%
+   mutate(tree_carbon = biomass * carbon)
+
+ total_carbon <- data %>%
+   summarise(total_carbon = sum(tree_carbon))
 
   return(total_carbon)
 }

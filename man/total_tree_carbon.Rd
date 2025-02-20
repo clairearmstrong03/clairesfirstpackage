@@ -5,20 +5,20 @@
 \title{Calculate Total Tree Carbon}
 \usage{
 total_tree_carbon(
-  csv_file,
-  dbh_col = NULL,
-  height_col = NULL,
+  data,
+  dbh_col,
   genus_col,
   species_col,
   lat_col,
   lon_col,
+  carbon,
   ...
 )
 }
 \arguments{
-\item{dbh_col}{Optional. The name of the column containing DBH (diameter at breast height).}
+\item{data}{A data frame containing tree information.}
 
-\item{height_col}{Optional. The name of the column containing tree height.}
+\item{dbh_col}{Optional. The name of the column containing DBH (diameter at breast height).}
 
 \item{genus_col}{The name of the column containing genus information.}
 
@@ -28,7 +28,7 @@ total_tree_carbon(
 
 \item{lon_col}{The name of the column containing longitude.}
 
-\item{data}{A data frame containing tree information.}
+\item{height_col}{Optional. The name of the column containing tree height.}
 }
 \value{
 A data frame with total estimated carbon content.
